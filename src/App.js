@@ -11,38 +11,23 @@ const handleRemoveAndAdd = ({
   target,
   targetIndex,
   handleType,
-  targetBrother, 
 }) => {
   if (currentDeepNum === targetDeepNum) {
     const tempArr = [...arr];
     switch (handleType) {
       case "add":
-        if (targetParent) {
-          if (targetParent.id === currentParent.id) {
-            tempArr.splice(targetIndex, 0, target);
-            debugger
-          }
-        } else {
-          if (targetBrother) {
-            const targetBrotherIndex = tempArr.findIndex(item => item.id === targetBrother.id);
-            tempArr.splice(targetBrotherIndex + 1, 0, target);
-          } else {
-            tempArr.splice(0, 0, target);
-          }
+        if (targetParent?.id === currentParent?.id) {
+          tempArr.splice(targetIndex, 0, target);
         }
-        return tempArr;
+        break;
       case "sub":
-        if (targetParent) {
-          if (targetParent.id === currentParent.id) {
-            tempArr.splice(targetIndex, 1);
-          }
-        } else {
+        if (targetParent?.id === currentParent?.id) {
           tempArr.splice(targetIndex, 1);
         }
-        return tempArr;
+        break;
       default:
-        return tempArr;
     }
+    return tempArr;
   } else {
     return arr.map((item) => {
       return {
@@ -62,36 +47,39 @@ const handleRemoveAndAdd = ({
   }
 };
 
-const findTargetBrother = (
-  arr,
-  targetParent,
-  currentParent,
-  targetIndex,
-  targetDeepNum,
-  currentDeepNum = 0
-) => {
-  if (targetParent) {
-    if (targetDeepNum === currentDeepNum) {
-      if (targetParent === currentParent) {
-        return arr[targetIndex - 1];
-      }
-    } else {
-      return arr.map((item) =>
-        findTargetBrother(
-          item.children || [],
-          targetParent,
-          item,
-          targetIndex,
-          targetDeepNum,
-          currentDeepNum + 1
-        )
-      ).filter(item => item)[0];
-    }
-  } else {
-    // 没有 targetParent，则目标为第 0 层
-    return arr[targetIndex - 1];
-  }
-};
+// 这个代码有问题，会可能是找到元素之前或者本身
+// const findTargetBrother = (
+//   arr,
+//   targetParent,
+//   currentParent,
+//   targetIndex,
+//   targetDeepNum,
+//   currentDeepNum = 0
+// ) => {
+//   if (targetParent) {
+//     if (targetDeepNum === currentDeepNum) {
+//       if (targetParent === currentParent) {
+//         return arr[targetIndex - 1];
+//       }
+//     } else {
+//       return arr
+//         .map((item) =>
+//           findTargetBrother(
+//             item.children || [],
+//             targetParent,
+//             item,
+//             targetIndex,
+//             targetDeepNum,
+//             currentDeepNum + 1
+//           )
+//         )
+//         .filter((item) => item)[0];
+//     }
+//   } else {
+//     // 没有 targetParent，则目标为第 0 层
+//     return arr[targetIndex - 1];
+//   }
+// };
 
 const applyDrag = (arr, dragResult) => {
   const {
@@ -107,8 +95,13 @@ const applyDrag = (arr, dragResult) => {
 
   let result = [...arr];
 
-  const targetBrother = findTargetBrother(arr, addParent, null, addedIndex, addedDeepNum);
-  console.log('targetBrother', targetBrother);
+  // const targetBrother = findTargetBrother(
+  //   arr,
+  //   addParent,
+  //   null,
+  //   addedIndex,
+  //   addedDeepNum
+  // );
 
   result = handleRemoveAndAdd({
     arr: result,
@@ -129,7 +122,6 @@ const applyDrag = (arr, dragResult) => {
     target: payload,
     targetIndex: addedIndex,
     handleType: "add",
-    targetBrother,
   });
   return result;
 };
@@ -237,25 +229,28 @@ function App() {
         groupName="1"
         getChildPayload={(index) => list[index]}
         onDrop={(e) => containerOnDrop(e, parent, deepNum)}
+        getGhostParent={() => document.body}
       >
         {list.map((item) => {
           if (!item.children?.length) {
-            return (
-              <Draggable key={item.id}>
-                <div className="draggable-item">{item.label}</div>
-              </Draggable>
-            );
+            // return (
+            //   <Draggable key={item.id}>
+            //     <div className="draggable-item">{item.label}</div>
+            //   </Draggable>
+            // );
             // todo: 待研究
             return (
-              <Container
-                groupName="1"
-                getChildPayload={(index) => list[index]}
-                onDrop={(e) => containerOnDrop(e, parent, deepNum + 1)}
-              >
-                <Draggable key={item.id}>
-                  <div className="draggable-item">{item.label}</div>
-                </Draggable>
-              </Container>
+              <Draggable key={item.id}>
+                <div className="draggable-item">
+                  <Container
+                    groupName="1"
+                    getChildPayload={(index) => list[index]}
+                    onDrop={(e) => containerOnDrop(e, item, deepNum + 1)}
+                  >
+                    {item.label}
+                  </Container>
+                </div>
+              </Draggable>
             );
           } else {
             return (
@@ -270,9 +265,7 @@ function App() {
                     cursor: "move",
                   }}
                 >
-                  <h4 style={{ textAlign: "center" }}>
-                    {item.label}
-                  </h4>
+                  <h4 style={{ textAlign: "center" }}>{item.label}</h4>
                   <div style={{ cursor: "default" }}>
                     {createDataElement(item, item.children, deepNum + 1)}
                   </div>
